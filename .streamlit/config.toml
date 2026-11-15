@@ -1,0 +1,30 @@
+[theme]
+primaryColor = "#4a9eff"
+backgroundColor = "#0e1117"
+secondaryBackgroundColor = "#1a1f2e"
+textColor = "#fafafa"
+font = "sans serif"
+
+[server]
+runOnSave = false
+fileWatcherType = "none"
+headless = true
+enableXsrfProtection = false
+maxUploadSize = 5
+maxMessageSize = 200
+
+[browser]
+gatherUsageStats = false
+serverAddress = "0.0.0.0"
+
+[runner]
+fastReruns = true
+enforceSerializableSessionState = false
+
+[global]
+developmentMode = false
+showWarningOnDirectExecution = false
+
+[client]
+showSidebarNavigation = false
+toolbarMode = "minimal"

@@ -1,0 +1,55 @@
+# Development / Feature Testing Stack
+# Runs alongside production on different ports.
+# Usage: docker compose -f docker-compose.dev.yml up -d --build
+#
+# Dashboard: http://localhost:8503
+# Agent writes to: ./data-dev/ (isolated from production ./data/)
+# No live volume mounts — requires explicit rebuild to pick up changes.
+# This prevents the wslrelay issue from constant file-watch triggers.
+
+services:
+  dashboard-dev:
+    build: .
+    container_name: secureview-dev-dashboard
+    ports:
+      - "8503:8501"
+    volumes:
+      - ./data-dev:/app/data
+      - ./assets:/app/assets:ro
+    env_file:
+      - .env
+    environment:
+      - TZ=America/New_York
+      - STREAMLIT_SERVER_RUN_ON_SAVE=false
+      - STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+      - STREAMLIT_GLOBAL_DEVELOPMENT_MODE=false
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+    restart: unless-stopped
+
+  agent-dev:
+    build: .
+    container_name: secureview-dev-agent
+    entrypoint: ["python", "-u", "agent/unified_agent.py"]
+    volumes:
+      - ./data-dev:/app/data
+      - ~/.aws:/root/.aws:ro
+    env_file:
+      - .env
+    environment:
+      - TZ=America/New_York
+      - AGENT_INTERVAL_SECONDS=900
+      - SSL_VERIFY=false
+    restart: unless-stopped

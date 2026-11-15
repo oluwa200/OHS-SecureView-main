@@ -1,0 +1,71 @@
+services:
+  dashboard-prod:
+    build: .
+    container_name: secureview-prod-dashboard
+    # No external port — access only through nginx (8443 mTLS)
+    expose:
+      - "8501"
+    volumes:
+      # ONLY data and assets — code is baked into image
+      - ./data:/app/data
+      - ./assets:/app/assets:ro
+      - qualys-mcp-server_defender_data:/app/defender_data:ro
+    env_file:
+      - .env
+    environment:
+      - TZ=America/New_York
+      - STREAMLIT_SERVER_RUN_ON_SAVE=true
+      - STREAMLIT_SERVER_FILE_WATCHER_TYPE=poll
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+      - STREAMLIT_GLOBAL_DEVELOPMENT_MODE=false
+      - PYTHONDONTWRITEBYTECODE=0
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 2G
+        reservations:
+          cpus: "2.0"
+          memory: 1G
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: secureview-prod-nginx
+    ports:
+      - "8443:443"
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      dashboard-prod:
+        condition: service_healthy
+    restart: unless-stopped
+
+  agent:
+    build: .
+    container_name: secureview-prod-agent
+    entrypoint: ["python", "-u", "agent/unified_agent.py"]
+    volumes:
+      - ./data:/app/data
+      - qualys-mcp-server_defender_data:/app/defender_data
+      - ~/.aws:/root/.aws
+    env_file:
+      - .env
+    environment:
+      - TZ=America/New_York
+      - AGENT_INTERVAL_SECONDS=900
+      - SSL_VERIFY=false
+    restart: unless-stopped
+
+volumes:
+  qualys-mcp-server_defender_data:
+    external: true

@@ -1,0 +1,41 @@
+# Secrets & credentials — NEVER commit these
+.env
+.env.secrets
+.env.local
+*.pem
+nginx/certs/server.key
+
+# Data files (generated at runtime by agent)
+data/
+data-dev/
+defender_data/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker (local)
+*.log
+
+# AWS credentials (should never be in repo)
+.aws/
+
+# Kiro workspace
+.kiro/

@@ -1,0 +1,101 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#0078d4', 'primaryTextColor': '#fff', 'primaryBorderColor': '#444', 'lineColor': '#888', 'secondaryColor': '#1a1a2e', 'tertiaryColor': '#16213e'}}}%%
+
+graph TB
+    subgraph SOURCES["🌐 Security Data Sources"]
+        CS[🦅 CrowdStrike<br/>EDR Hosts + CSPM IOMs]
+        DEF[🛡️ Microsoft Defender<br/>Devices + Alerts + Secure Score]
+        QUA[🔍 Qualys VMDR<br/>Vulnerabilities + Assets]
+        BP[📡 BindPlane<br/>Telemetry Agents]
+        AWS[☁️ AWS EC2<br/>4 Accounts via SSO]
+    end
+
+    subgraph AGENT["⚙️ Unified Agent Container (every 15 min)"]
+        direction TB
+        FETCH[Fetch from all APIs]
+        PROCESS[Process & Clean<br/>• Dedup BindPlane<br/>• Build Defender Report<br/>• Filter Active Only]
+        CORRELATE[Cross-Correlate<br/>EC2 IPs vs CS/Qualys/BP]
+        WATCHDOG[🐕 Data Watchdog<br/>Auto-correct on disk]
+        WRITE[Write JSON Files]
+    end
+
+    subgraph DATA["💾 Shared Data Volume"]
+        D1[crowdstrike_hosts.json]
+        D2[defender_report.json]
+        D3[vulnerability_report.json]
+        D4[bindplane_agents.json]
+        D5[aws_ec2_instances.json]
+        D6[ai_insights.json]
+    end
+
+    subgraph SMART["🧠 Smart-Load Layer (dashboard_config.py)"]
+        SL1[load_defender_active_devices<br/>Active only + format detection]
+        SL2[load_bindplane_deduped<br/>Hostname dedup + connected priority]
+        SL3[load_crowdstrike_hosts<br/>Active sensors only]
+        SL4[load_qualys_summary<br/>Recompute from raw data]
+    end
+
+    subgraph DASH["📊 OHS SecureView Dashboard (Port 8502)"]
+        HOME[🏠 Home Page<br/>6 KPI Tiles + Sparklines]
+        VULN[🔴 Vulnerability<br/>SLA Tracking + KRI]
+        END[🦅 Endpoint<br/>EDR Coverage + CSPM]
+        DDEF[🛡️ Defender<br/>Devices + Posture]
+        BPD[📡 BindPlane<br/>Coverage Gaps by Category]
+        AI[🤖 AI Insights<br/>Risk Score + Blind Spots]
+        EXEC[📊 Executive<br/>PDF Export]
+    end
+
+    subgraph INFRA["🔧 Infrastructure"]
+        NGINX[🔒 Nginx mTLS<br/>Port 8443]
+        SSO[🔑 AWS SSO<br/>Chrome Incognito / 8h]
+        HEALTH[❤️ Health Checks<br/>Auto-restart + DNS]
+    end
+
+    CS --> FETCH
+    DEF --> FETCH
+    QUA --> FETCH
+    BP --> FETCH
+    AWS --> FETCH
+
+    FETCH --> PROCESS
+    PROCESS --> CORRELATE
+    CORRELATE --> WRITE
+    WRITE --> WATCHDOG
+    WATCHDOG --> DATA
+
+    WRITE --> D1
+    WRITE --> D2
+    WRITE --> D3
+    WRITE --> D4
+    WRITE --> D5
+    WRITE --> D6
+
+    DATA --> SMART
+    D1 --> SL3
+    D2 --> SL1
+    D3 --> SL4
+    D4 --> SL2
+    D5 --> SL4
+
+    SMART --> DASH
+    SL1 --> HOME
+    SL2 --> HOME
+    SL3 --> HOME
+    SL4 --> HOME
+
+    HOME --> VULN
+    HOME --> END
+    HOME --> DDEF
+    HOME --> BPD
+    HOME --> AI
+    HOME --> EXEC
+
+    NGINX --> DASH
+    SSO --> AWS
+    HEALTH --> NGINX
+
+    style SOURCES fill:#1a1a2e,stroke:#0078d4,stroke-width:2px
+    style AGENT fill:#16213e,stroke:#ff8800,stroke-width:2px
+    style DATA fill:#0f3460,stroke:#44bb44,stroke-width:2px
+    style SMART fill:#1a1a2e,stroke:#ff4444,stroke-width:2px
+    style DASH fill:#16213e,stroke:#0078d4,stroke-width:2px
+    style INFRA fill:#0f3460,stroke:#666,stroke-width:1px
